@@ -98,6 +98,12 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
+        "--name",
+        type=str,
+        required=True,
+        help="name of the output image(s)"
+    )
+    parser.add_argument(
         "--prompt",
         type=str,
         nargs="?",
@@ -270,8 +276,8 @@ def main():
 
     sample_path = os.path.join(outpath, "samples")
     os.makedirs(sample_path, exist_ok=True)
-    base_count = len(os.listdir(sample_path))
-    grid_count = len(os.listdir(outpath)) - 1
+    base_count = 0
+    grid_count = 0
 
     start_code = None
     if opt.fixed_code:
@@ -315,7 +321,8 @@ def main():
                                 x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
                                 img = Image.fromarray(x_sample.astype(np.uint8))
                                 img = put_watermark(img, wm_encoder)
-                                img.save(os.path.join(sample_path, f"{base_count:05}.png"))
+                                fullpath = os.path.join(sample_path, f"{opt.name}-{base_count}.png")
+                                img.save(fullpath)
                                 base_count += 1
 
                         if not opt.skip_grid:
@@ -331,14 +338,12 @@ def main():
                     grid = 255. * rearrange(grid, 'c h w -> h w c').cpu().numpy()
                     img = Image.fromarray(grid.astype(np.uint8))
                     img = put_watermark(img, wm_encoder)
-                    img.save(os.path.join(outpath, f'grid-{grid_count:04}.png'))
+                    img.save(os.path.join(outpath, f'grid-{opt.name}-{grid_count}.png'))
                     grid_count += 1
 
                 toc = time.time()
 
-    print(f"Your samples are ready and waiting for you here: \n{outpath} \n"
-          f" \nEnjoy.")
-
+    print(f"__output__={fullpath}")
 
 if __name__ == "__main__":
     main()
