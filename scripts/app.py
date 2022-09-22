@@ -1,5 +1,7 @@
-from flask import Flask
-from flask import request
+import random
+import string
+from flask import Flask, request, jsonify
+
 import argparse, os, sys, glob
 import cv2
 import torch
@@ -106,6 +108,8 @@ class DotDict(dict):
 
 def params(req=None):
     parsed = {
+        "name": None,
+        "prompt": None,
         "ddim_steps": 50,
         "plms": True,
         "laion400m": False,
@@ -123,9 +127,15 @@ def params(req=None):
         "precision": "autocast",
         "config": "configs/stable-diffusion/v1-inference.yaml",
     }
+
     if req is not None:
-        parsed["prompt"] = req.args.get("prompt", "")
-        parsed["name"] = req.args.get("name", "")
+        strkeys = ["prompt", "name", "seed"]
+        for key in strkeys:
+            parsed[key] = req.args.get(key, parsed[key])
+        intkeys = ["seed", "H", "W"]
+        for key in intkeys:
+            parsed[key] = int(req.args.get(key, parsed[key]))
+
     return DotDict(parsed)
 
 
@@ -135,14 +145,16 @@ start_code = None
 sampler = None
 model = None
 device = None
+preloaded = False
 
 
 def preload():
-    print("Preloading...")
+    tic = time.time()
     global start_code
     global sampler
     global model
     global device
+    global preloaded
 
     opt = params()
 
@@ -159,16 +171,21 @@ def preload():
     else:
         sampler = DDIMSampler(model)
 
-    print("Done preloading...")
+    toc = time.time()
+    preloaded = True
+    return toc - tic
 
 
 def render(r):
-    print("running render 1")
     global start_code
     global sampler
     global model
     global device
-    sample_path = "/var/www/stable-diffusion/"
+
+    if not preloaded:
+        preload()
+
+    sample_path = "/db/txt2img_output/"
 
     opt = params(r)
 
@@ -222,7 +239,14 @@ def render(r):
 
                 toc = time.time()
 
-    return filename
+    return {
+        "filename": filename,
+        "elapsed": toc - tic,
+        "status": 200,
+        "error": False,
+        "errmsg": None,
+        "errcode": 0,
+    }
 
 
 def create_app():
@@ -231,12 +255,27 @@ def create_app():
 
     @app.route("/boot")
     def boot():
-        preload()
-        return "booted!"
+        elapsed = preload()
+        return jsonify({
+            "elapsed": elapsed,
+            "status": 200,
+            "error": False,
+            "errmsg": None,
+            "errcode": 0,
+        })
 
     @app.route("/")
     def home():
-        filename = render(request)
-        return f"rendered {filename}"
+        name = request.args.get("name")
+        prompt = request.args.get("prompt")
+        if name is None or prompt is None:
+            return jsonify({
+                "error": True,
+                "errcode": 1,
+                "errmsg": "name or prompt not sent",
+                "status": 400,
+            }), 400
+        result = render(request)
+        return jsonify(result)
 
     return app
