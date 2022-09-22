@@ -3,6 +3,10 @@ conda env update --name ldm --file environment.yaml --prune
 
 * Sync local code to remote:
 cd ~/Projects/
-rsync -av --exclude 'venv' stable-diffusion/ bitzer:/home/histre/stable-diffusion
+rsync -av --exclude={'venv','.git','.idea'} stable-diffusion/ bitzer:/home/histre/stable-diffusion
 
 Note: venv is used in local just for the sake of pycharm. Actual env is managed by conda.
+
+* Prod
+cd ~/stable-diffusion
+gunicorn --timeout=180 --workers=1 'scripts.app:create_app()'

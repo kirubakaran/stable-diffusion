@@ -29,8 +29,6 @@ safety_model_id = "CompVis/stable-diffusion-safety-checker"
 safety_feature_extractor = AutoFeatureExtractor.from_pretrained(safety_model_id)
 safety_checker = StableDiffusionSafetyChecker.from_pretrained(safety_model_id)
 
-app = Flask(__name__)
-
 
 def chunk(it, size):
     it = iter(it)
@@ -106,7 +104,7 @@ class DotDict(dict):
     __delattr__ = dict.__delitem__
 
 
-def params(request=None):
+def params(req=None):
     parsed = {
         "ddim_steps": 50,
         "plms": True,
@@ -125,19 +123,20 @@ def params(request=None):
         "precision": "autocast",
         "config": "configs/stable-diffusion/v1-inference.yaml",
     }
-    if request is not None:
-        parsed["prompt"] = request.args.get("prompt", "")
-        parsed["name"] = request.args.get("name", "")
+    if req is not None:
+        parsed["prompt"] = req.args.get("prompt", "")
+        parsed["name"] = req.args.get("name", "")
     return DotDict(parsed)
 
 
+# Globals
+# TODO : don't use globals
 start_code = None
 sampler = None
 model = None
 device = None
 
 
-@app.before_first_request
 def preload():
     print("Preloading...")
     global start_code
@@ -223,8 +222,21 @@ def render(r):
 
                 toc = time.time()
 
+    return filename
 
-@app.route("/")
-def home():
-    render(request)
-    return "home sweet home!"
+
+def create_app():
+    preload()
+    app = Flask(__name__)
+
+    @app.route("/boot")
+    def boot():
+        preload()
+        return "booted!"
+
+    @app.route("/")
+    def home():
+        filename = render(request)
+        return f"rendered {filename}"
+
+    return app
