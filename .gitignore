@@ -1,0 +1,12 @@
+.DS_Store
+.idea
+*.log
+tmp/
+.vscode
+
+.idea/
+latent_diffusion.egg-info
+
+*.py[co]
+__pycache__
+.ipynb_checkpoints/
