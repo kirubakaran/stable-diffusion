@@ -9,9 +9,4 @@ Note: venv is used in local just for the sake of pycharm. Actual env is managed 
 
 * Prod
 cd ~/stable-diffusion
-gunicorn --timeout=180 --workers=1 --bind=127.0.0.1:5000 'scripts.app:create_app()'
-
-* TODO
-- [ ] remove globals
-- [ ] don't put all output images in one dir; partition by first few chars of name
-- [ ]
+gunicorn --timeout=180 --workers=1 --bind=127.0.0.1:6000 'scripts.app:create_app()'

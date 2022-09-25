@@ -185,7 +185,7 @@ def render(r):
     if not preloaded:
         preload()
 
-    sample_path = "/db/txt2img_output/"
+    sample_path = "/db/output/txt2img/static/"
 
     opt = params(r)
 
@@ -234,8 +234,14 @@ def render(r):
                         x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
                         img = Image.fromarray(x_sample.astype(np.uint8))
                         filename = os.path.join(sample_path, f"{opt.name}.png")
-                        print(f"filename={filename}")
                         img.save(filename)
+
+                        # jpegs
+                        img_rgb = img.convert("RGB")
+                        filename_512 = os.path.join(sample_path, f"{opt.name}-512.jpg")
+                        img_rgb.save(filename_512, "JPEG")
+                        filename_256 = os.path.join(sample_path, f"{opt.name}-256.jpg")
+                        img_rgb.resize((256,256)).save(filename_256, "JPEG")
 
                 toc = time.time()
 
