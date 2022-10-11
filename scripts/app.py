@@ -1,4 +1,5 @@
 import random
+import os
 import string
 from flask import Flask, request, jsonify
 
@@ -186,6 +187,8 @@ def render(r):
         preload()
 
     sample_path = "/db/output/txt2img/static/"
+    if 'HISTRE_AWS' in os.environ:
+        sample_path = "/home/ubuntu/output/txt2img/static/"
 
     opt = params(r)
 
@@ -261,18 +264,31 @@ def render(r):
 
 
 def create_app():
-    preload()
     app = Flask(__name__)
 
     @app.route("/boot")
     def boot():
-        elapsed = preload()
+        global preloaded
+        elapsed = 0
+        if not preloaded:
+            elapsed = preload()
         return jsonify({
             "elapsed": elapsed,
             "status": 200,
             "error": False,
             "errmsg": None,
             "errcode": 0,
+        })
+
+    @app.route("/health")
+    def health():
+        global preloaded
+        return jsonify({
+            "status": 200,
+            "error": False,
+            "errmsg": None,
+            "errcode": 0,
+            "preloaded": preloaded,
         })
 
     @app.route("/")
